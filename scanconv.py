@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-from skimage import io, img_as_float, transform
+import cv2
+
+from skimage import io, img_as_float, img_as_ubyte, transform
 from skimage.color import rgb2gray
 from skimage.filters import gaussian, threshold_mean
 from skimage.segmentation import active_contour, clear_border
@@ -25,7 +27,6 @@ def preprocessImage(img):
 def thresholdImage(imgGray):
     th = threshold_mean(imgGray)
     imgBinary = imgGray > th
-#     imgBinary = imgBinary.astype(np.float)
     return imgBinary, th
 
 
@@ -83,29 +84,33 @@ def findPolygon(imgBinary):
     lowerRight = farthestPoint(relCont, 4) + centroid
     lowerLeft = farthestPoint(relCont, 3) + centroid
 
-    cropCont = np.array([upperLeft, upperRight, lowerRight, lowerLeft,
-                         upperLeft])
+    cropCont = np.array([upperLeft, lowerLeft, upperRight, lowerRight])
 
-    width = max((upperRight[1] - upperLeft[1]),
-                (lowerRight[1] - lowerLeft[1]))
-    height = max((lowerLeft[0] - upperLeft[0]),
-                 (lowerRight[0] - upperRight[0]))
+    width = int(max((upperRight[1] - upperLeft[1]),
+                    (lowerRight[1] - lowerLeft[1])))
+    height = int(max((lowerLeft[0] - upperLeft[0]),
+                     (lowerRight[0] - upperRight[0])))
 
     return cropCont, [width, height]
 
 
 def warpPerspective(img, cropCont, wh):
     width, height = wh
-    src = cropCont[0:4, :]
+    width, height = [2100, 2970]
+    src = cropCont[0:4, :].astype(np.float32)
     dst = np.array([[0, 0],
+                    [height, 0],
                     [0, width],
-                    [height, width],
-                    [height, 0]])
+                    [height, width]], dtype=np.float32)
 
-    tf = transform.estimate_transform('projective', src, dst)
+    M = cv2.getPerspectiveTransform(src, dst)
+    img = img_as_ubyte(img)
+    imgWarped = cv2.warpPerspective(img, M, (width, height))
 
-    return transform.warp(img, inverse_map=tf.inverse, output_shape=(height,
-                                                                     width))
+    return imgWarped
+
+#     tf = transform.estimate_transform('projective', dst, src)
+#     return transform.warp(img, tf, output_shape=(max(wh), max(wh)))
 
 
 def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None, tr=None):
