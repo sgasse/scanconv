@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-from skimage import io, img_as_float, img_as_ubyte, transform
+from skimage import io, img_as_float, transform
 from skimage.color import rgb2gray
 from skimage.filters import gaussian, threshold_mean
-from skimage.segmentation import active_contour, clear_border
+from skimage.segmentation import clear_border
 from skimage.morphology import closing, square
 from skimage.measure import label, regionprops, find_contours
 
