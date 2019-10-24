@@ -86,29 +86,23 @@ def findPolygon(imgBinary):
     cropCont = np.array([upperLeft, upperRight, lowerRight, lowerLeft,
                          upperLeft])
 
-    return cropCont
+    width = max((upperRight[1] - upperLeft[1]),
+                (lowerRight[1] - lowerLeft[1]))
+    height = max((lowerLeft[0] - upperLeft[0]),
+                 (lowerRight[0] - upperRight[0]))
+
+    return cropCont, [width, height]
 
 
-def warpPerspective(img, cropCont):
-    if img.shape[0] > img.shape[1]:
-        # portrait format
-        width = 1500
-        height = int((1500 / 210)*297)
-    else:
-        # landscape format
-        height = 1500
-        width = int((1500 / 210)*297)
-
+def warpPerspective(img, cropCont, wh):
+    width, height = wh
     src = cropCont[0:4, :]
     dst = np.array([[0, 0],
                     [0, width],
                     [height, width],
                     [height, 0]])
 
-#     tf = transform.ProjectiveTransform()
-#     tf.estimate(src, dst)
-
-    tf = transform.estimate_transform('projective', src, dst) 
+    tf = transform.estimate_transform('projective', src, dst)
 
     return transform.warp(img, inverse_map=tf.inverse, output_shape=(height,
                                                                      width))
@@ -159,8 +153,8 @@ orig = getImage()
 imgGray = preprocessImage(orig)
 imgBinary, th = thresholdImage(imgGray)
 bbox = findRegion(imgBinary)
-cropCont = findPolygon(imgBinary)
-transformedSheet = warpPerspective(imgGray, cropCont)
+cropCont, wh = findPolygon(imgBinary)
+transformedSheet = warpPerspective(imgGray, cropCont, wh)
 
 
 plotImgs(orig, imgGray, imgBinary, bbox=bbox, cont=cropCont,
