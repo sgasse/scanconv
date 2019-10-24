@@ -82,7 +82,8 @@ def findPolygon(imgBinary):
     lowerRight = farthestPoint(relCont, 4) + centroid
     lowerLeft = farthestPoint(relCont, 3) + centroid
 
-    cropCont = np.array([upperLeft, lowerLeft, upperRight, lowerRight])
+    cropCont = np.array([upperLeft, lowerLeft, lowerRight, upperRight,
+                         upperLeft])
 
     return cropCont
 
@@ -98,8 +99,8 @@ def warpPerspective(img, cropCont):
     src = cropCont[0:4, :]
     dst = np.array([[0, 0],
                     [height, 0],
-                    [0, width],
-                    [height, width]], dtype=np.float32)
+                    [height, width],
+                    [0, width]], dtype=np.float32)
 
     tf = transform.estimate_transform('projective',
                                       np.flip(dst, 1),
