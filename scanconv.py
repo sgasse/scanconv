@@ -2,8 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-import cv2
-
 from skimage import io, img_as_float, img_as_ubyte, transform
 from skimage.color import rgb2gray
 from skimage.filters import gaussian, threshold_mean
@@ -86,30 +84,25 @@ def findPolygon(imgBinary):
 
     cropCont = np.array([upperLeft, lowerLeft, upperRight, lowerRight])
 
-    width = int(max((upperRight[1] - upperLeft[1]),
-                    (lowerRight[1] - lowerLeft[1])))
-    height = int(max((lowerLeft[0] - upperLeft[0]),
-                     (lowerRight[0] - upperRight[0])))
-
-    return cropCont, [width, height]
+    return cropCont
 
 
-def warpPerspective(img, cropCont, wh):
-    width, height = wh
-    width, height = [2100, 2970]
-    src = cropCont[0:4, :].astype(np.float32)
+def warpPerspective(img, cropCont):
+    if img.shape[0] > img.shape[1]:
+        # portrait
+        width, height = [2100, 2970]
+    else:
+        # landscape
+        width, height = [2970, 2100]
+
+    src = cropCont[0:4, :]
     dst = np.array([[0, 0],
                     [height, 0],
                     [0, width],
                     [height, width]], dtype=np.float32)
 
-#     M = cv2.getPerspectiveTransform(np.flip(src, 1), np.flip(dst, 1))
-#     img = img_as_ubyte(img)
-#     imgWarped = cv2.warpPerspective(img, M, (width, height))
-# 
-#     return imgWarped
-
-    tf = transform.estimate_transform('projective', np.flip(dst, 1),
+    tf = transform.estimate_transform('projective',
+                                      np.flip(dst, 1),
                                       np.flip(src, 1))
     return transform.warp(img, tf, output_shape=(height, width))
 
@@ -159,10 +152,10 @@ orig = getImage()
 imgGray = preprocessImage(orig)
 imgBinary, th = thresholdImage(imgGray)
 bbox = findRegion(imgBinary)
-cropCont, wh = findPolygon(imgBinary)
-transformedSheet = warpPerspective(imgGray, cropCont, wh)
+cropCont = findPolygon(imgBinary)
+imgWarped = warpPerspective(imgGray, cropCont)
 
 
 plotImgs(orig, imgGray, imgBinary, bbox=bbox, cont=cropCont,
-         tr=transformedSheet)
+         tr=imgWarped)
 
