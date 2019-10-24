@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-from skimage import io, img_as_float
+from skimage import io, img_as_float, transform
 from skimage.color import rgb2gray
 from skimage.filters import gaussian, threshold_mean
 from skimage.segmentation import active_contour, clear_border
@@ -89,12 +89,33 @@ def findPolygon(imgBinary):
     return cropCont
 
 
-def warpPerspective(img, bbox):
-    pass
+def warpPerspective(img, cropCont):
+    if img.shape[0] > img.shape[1]:
+        # portrait format
+        width = 1500
+        height = int((1500 / 210)*297)
+    else:
+        # landscape format
+        height = 1500
+        width = int((1500 / 210)*297)
+
+    src = cropCont[0:4, :]
+    dst = np.array([[0, 0],
+                    [0, width],
+                    [height, width],
+                    [height, 0]])
+
+#     tf = transform.ProjectiveTransform()
+#     tf.estimate(src, dst)
+
+    tf = transform.estimate_transform('projective', src, dst) 
+
+    return transform.warp(img, inverse_map=tf.inverse, output_shape=(height,
+                                                                     width))
 
 
-def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None):
-    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(10, 8))
+def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None, tr=None):
+    fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(10, 8))
 
     ax[0, 0].imshow(orig)
     ax[0, 0].set_title('Original')
@@ -120,6 +141,14 @@ def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None):
                                   fill=False, edgecolor='blue', linewidth=2)
         ax[1, 0].add_patch(rect)
 
+    if tr is not None:
+        ax[0, 2].imshow(tr, cmap=plt.cm.gray)
+        ax[0, 2].set_title('Transformed Image')
+        ax[0, 2].set_axis_off()
+    else:
+        ax[0, 2].set_axis_off()
+
+    ax[1, 2].set_axis_off()
 
     fig.tight_layout()
 
@@ -131,7 +160,9 @@ imgGray = preprocessImage(orig)
 imgBinary, th = thresholdImage(imgGray)
 bbox = findRegion(imgBinary)
 cropCont = findPolygon(imgBinary)
+transformedSheet = warpPerspective(imgGray, cropCont)
 
 
-plotImgs(orig, imgGray, imgBinary, bbox=bbox, cont=cropCont)
+plotImgs(orig, imgGray, imgBinary, bbox=bbox, cont=cropCont,
+         tr=transformedSheet)
 
