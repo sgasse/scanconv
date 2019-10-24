@@ -103,14 +103,15 @@ def warpPerspective(img, cropCont, wh):
                     [0, width],
                     [height, width]], dtype=np.float32)
 
-    M = cv2.getPerspectiveTransform(np.flip(src, 1), np.flip(dst, 1))
-    img = img_as_ubyte(img)
-    imgWarped = cv2.warpPerspective(img, M, (width, height))
+#     M = cv2.getPerspectiveTransform(np.flip(src, 1), np.flip(dst, 1))
+#     img = img_as_ubyte(img)
+#     imgWarped = cv2.warpPerspective(img, M, (width, height))
+# 
+#     return imgWarped
 
-    return imgWarped
-
-#     tf = transform.estimate_transform('projective', dst, src)
-#     return transform.warp(img, tf, output_shape=(max(wh), max(wh)))
+    tf = transform.estimate_transform('projective', np.flip(dst, 1),
+                                      np.flip(src, 1))
+    return transform.warp(img, tf, output_shape=(height, width))
 
 
 def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None, tr=None):
