@@ -103,7 +103,7 @@ def warpPerspective(img, cropCont, wh):
                     [0, width],
                     [height, width]], dtype=np.float32)
 
-    M = cv2.getPerspectiveTransform(src, dst)
+    M = cv2.getPerspectiveTransform(np.flip(src, 1), np.flip(dst, 1))
     img = img_as_ubyte(img)
     imgWarped = cv2.warpPerspective(img, M, (width, height))
 
