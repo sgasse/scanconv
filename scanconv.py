@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -108,6 +110,16 @@ def warpPerspective(img, cropCont):
     return transform.warp(img, tf, output_shape=(height, width))
 
 
+def saveImage(img, filename, path, prefix='warped_', quality=80):
+    if filename.endswith('.JPG'):
+        filename = filename.rstrip('.JPG')
+    if filename.endswith('.jpg'):
+        filename = filename.rstrip('.jpg')
+
+    saveName = os.path.join(path, f'{prefix}{filename}.jpg')
+    io.imsave(saveName, img, quality=quality)
+
+
 def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None, tr=None):
     fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(10, 8))
 
@@ -155,6 +167,10 @@ imgBinary, th = thresholdImage(imgGray)
 # bbox = findRegion(imgBinary)
 cropCont = findPolygon(imgBinary)
 imgWarped = warpPerspective(orig, cropCont)
+
+
+os.makedirs('warped', exist_ok=True)
+saveImage(imgWarped, 'letter_bla', 'warped')
 
 
 plotImgs(orig, imgGray, imgBinary, bbox=None, cont=cropCont,
