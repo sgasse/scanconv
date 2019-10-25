@@ -185,27 +185,20 @@ def batchTransform(imgDir):
     os.makedirs(pdfDir, exist_ok=True)
     pdfDict = dict()
     for root, _, files in os.walk(imgDir):
-        if root == imgDir:
-            # convert files and create separate PDFs
-            for file in files:
-                if file.endswith('.jpg') or file.endswith('.JPG'):
-                    origFile = os.path.join(root, file)
+        # convert files and create separate PDFs
+        for file in files:
+            if file.endswith('.jpg') or file.endswith('.JPG'):
+                origFile = os.path.join(root, file)
+                if root == imgDir:
                     pdfFile = os.path.join(pdfDir, (file.rsplit('.')[0] + '.pdf'))
-                    imgWarped = processImage(origFile)
-                    savePDF(imgWarped, pdfFile)
-        else:
-            # convert files and create separate PDFs
-            for file in files:
-                if file.endswith('.jpg') or file.endswith('.JPG'):
-                    origFile = os.path.join(root, file)
+                else:
                     pdfFile = os.path.join(tmpDir, (file.rsplit('.')[0] + '.pdf'))
-                    print(pdfFile)
-                    imgWarped = processImage(origFile)
-                    savePDF(imgWarped, pdfFile)
                     if root not in pdfDict:
                         pdfDict[root] = [pdfFile]
                     else:
                         pdfDict[root].append(pdfFile)
+                imgWarped = processImage(origFile)
+                savePDF(imgWarped, pdfFile)
 
     for docName in pdfDict.keys():
         inFiles = pdfDict[docName]
