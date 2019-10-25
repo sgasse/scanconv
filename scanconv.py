@@ -152,11 +152,11 @@ def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None, tr=None):
 orig = getImage()
 imgGray = preprocessImage(orig)
 imgBinary, th = thresholdImage(imgGray)
-bbox = findRegion(imgBinary)
+# bbox = findRegion(imgBinary)
 cropCont = findPolygon(imgBinary)
-imgWarped = warpPerspective(imgGray, cropCont)
+imgWarped = warpPerspective(orig, cropCont)
 
 
-plotImgs(orig, imgGray, imgBinary, bbox=bbox, cont=cropCont,
+plotImgs(orig, imgGray, imgBinary, bbox=None, cont=cropCont,
          tr=imgWarped)
 
