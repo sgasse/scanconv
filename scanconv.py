@@ -4,24 +4,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-from skimage import io, img_as_float, transform
+from skimage import io, img_as_float, img_as_ubyte, transform
 from skimage.color import rgb2gray
 from skimage.filters import gaussian, threshold_mean
 from skimage.segmentation import clear_border
 from skimage.morphology import closing, square
 from skimage.measure import label, regionprops, find_contours
 
-
-def getImage():
-#     orig = img_as_float(io.imread('img/scan_desk.jpg'))
-    orig = img_as_float(io.imread('img/letter_sheared.jpg'))
-    return orig
+from PIL import Image
 
 
-def preprocessImage(img):
-    imgGray = rgb2gray(img)
-    imgGray = gaussian(imgGray, sigma=1)
-    return imgGray
+def getImage(file):
+    orig = img_as_float(io.imread(file))
+    imgGray = gaussian(rgb2gray(orig), sigma=1)
+    return orig, imgGray
 
 
 def thresholdImage(imgGray):
@@ -110,14 +106,10 @@ def warpPerspective(img, cropCont):
     return transform.warp(img, tf, output_shape=(height, width))
 
 
-def saveImage(img, filename, path, prefix='warped_', quality=80):
-    if filename.endswith('.JPG'):
-        filename = filename.rstrip('.JPG')
-    if filename.endswith('.jpg'):
-        filename = filename.rstrip('.jpg')
-
-    saveName = os.path.join(path, f'{prefix}{filename}.jpg')
-    io.imsave(saveName, img, quality=quality)
+def saveImage(img, filename, quality=80):
+    filename = filename.rsplit('.', 1)[0]
+    imgP = Image.fromarray(img_as_ubyte(img))
+    imgP.save(f'{filename}.pdf', 'pdf')
 
 
 def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None, tr=None):
@@ -161,8 +153,34 @@ def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None, tr=None):
     plt.show()
 
 
-orig = getImage()
-imgGray = preprocessImage(orig)
+def processImage(fullname):
+    orig, imgGray = getImage(fullname)
+    imgBinary, _ = thresholdImage(imgGray)
+    cropCont = findPolygon(imgBinary)
+    imgWarped = warpPerspective(orig, cropCont)
+    return imgWarped
+
+
+def batchTransform(imgDir):
+    os.makedirs('PDFs', exist_ok=True)
+    tmpDir = '/tmp/scanconv'
+    os.makedirs(tmpDir, exist_ok=True)
+    for root, _, files in os.walk(imgDir):
+        if root == imgDir:
+            # convert files and create separate PDFs
+            for file in files:
+                if file.endswith('.jpg') or file.endswith('.JPG'):
+                    origFile = os.path.join(root, file)
+                    tmpFile = os.path.join(tmpDir, file)
+                    imgWarped = processImage(origFile)
+                    saveImage(imgWarped, tmpFile)
+
+                    
+        else:
+            print(f'Down in {root}')
+
+
+orig, imgGray = getImage('img/letter_sheared.jpg')
 imgBinary, th = thresholdImage(imgGray)
 # bbox = findRegion(imgBinary)
 cropCont = findPolygon(imgBinary)
@@ -170,7 +188,7 @@ imgWarped = warpPerspective(orig, cropCont)
 
 
 os.makedirs('warped', exist_ok=True)
-saveImage(imgWarped, 'letter_bla', 'warped')
+saveImage(imgWarped, 'warped/letter_bla.jpg')
 
 
 plotImgs(orig, imgGray, imgBinary, bbox=None, cont=cropCont,
