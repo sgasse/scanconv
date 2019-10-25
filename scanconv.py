@@ -162,35 +162,39 @@ def processImage(fullname):
 
 
 def batchTransform(imgDir):
-    os.makedirs('PDFs', exist_ok=True)
-    tmpDir = '/tmp/scanconv'
-    os.makedirs(tmpDir, exist_ok=True)
+    pdfDir = 'pdfs'
+    os.makedirs(pdfDir, exist_ok=True)
     for root, _, files in os.walk(imgDir):
         if root == imgDir:
             # convert files and create separate PDFs
             for file in files:
                 if file.endswith('.jpg') or file.endswith('.JPG'):
                     origFile = os.path.join(root, file)
-                    tmpFile = os.path.join(tmpDir, file)
+                    pdfFile = os.path.join(pdfDir, file)
                     imgWarped = processImage(origFile)
-                    saveImage(imgWarped, tmpFile)
-
-                    
+                    saveImage(imgWarped, pdfFile)
         else:
             print(f'Down in {root}')
 
 
-orig, imgGray = getImage('img/letter_sheared.jpg')
-imgBinary, th = thresholdImage(imgGray)
-# bbox = findRegion(imgBinary)
-cropCont = findPolygon(imgBinary)
-imgWarped = warpPerspective(orig, cropCont)
 
+def test_imgConv():
+    orig, imgGray = getImage('img/letter_sheared.jpg')
+    imgBinary, th = thresholdImage(imgGray)
+    cropCont = findPolygon(imgBinary)
+    imgWarped = warpPerspective(orig, cropCont)
 
-os.makedirs('warped', exist_ok=True)
-saveImage(imgWarped, 'warped/letter_bla.jpg')
+    os.makedirs('test_output', exist_ok=True)
+    saveImage(imgWarped, 'test_output/letter_done.jpg')
 
+    plotImgs(orig, imgGray, imgBinary, bbox=None, cont=cropCont,
+             tr=imgWarped)
 
-plotImgs(orig, imgGray, imgBinary, bbox=None, cont=cropCont,
-         tr=imgWarped)
+    resDict = {'orig': orig,
+               'imgGray': imgGray,
+               'imgBinary': imgBinary,
+               'cropCont': cropCont,
+               'imgWarped': imgWarped}
+
+    return resDict
 
