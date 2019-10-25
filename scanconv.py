@@ -10,8 +10,24 @@ from skimage.filters import gaussian, threshold_mean
 from skimage.segmentation import clear_border
 from skimage.morphology import closing, square
 from skimage.measure import label, regionprops, find_contours
-
 from PIL import Image
+from PyPDF2 import PdfFileReader, PdfFileWriter
+from shutil import rmtree
+
+
+def catPDF(inFiles, outFile):
+    inStream = list()
+    try:
+        for file in inFiles:
+            inStream.append(open(file, 'rb')) 
+        writer = PdfFileWriter()
+        for reader in map(PdfFileReader, inStream):
+            for n in range(reader.getNumPages()):
+                writer.addPage(reader.getPage(n))
+        writer.write(outFile)
+    finally:
+        for f in inStream:
+            f.close()
 
 
 def getImage(file):
@@ -106,10 +122,9 @@ def warpPerspective(img, cropCont):
     return transform.warp(img, tf, output_shape=(height, width))
 
 
-def saveImage(img, filename, quality=80):
-    filename = filename.rsplit('.', 1)[0]
+def savePDF(img, filename, quality=80):
     imgP = Image.fromarray(img_as_ubyte(img))
-    imgP.save(f'{filename}.pdf', 'pdf')
+    imgP.save(filename, 'pdf')
 
 
 def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None, tr=None):
@@ -162,20 +177,42 @@ def processImage(fullname):
 
 
 def batchTransform(imgDir):
+    tmpDir = f'/tmp/scanconv'
+    if os.path.exists(tmpDir):
+        rmtree(tmpDir)
+    os.makedirs(tmpDir)
     pdfDir = 'pdfs'
     os.makedirs(pdfDir, exist_ok=True)
+    pdfDict = dict()
     for root, _, files in os.walk(imgDir):
         if root == imgDir:
             # convert files and create separate PDFs
             for file in files:
                 if file.endswith('.jpg') or file.endswith('.JPG'):
                     origFile = os.path.join(root, file)
-                    pdfFile = os.path.join(pdfDir, file)
+                    pdfFile = os.path.join(pdfDir, (file.rsplit('.')[0] + '.pdf'))
                     imgWarped = processImage(origFile)
-                    saveImage(imgWarped, pdfFile)
+                    savePDF(imgWarped, pdfFile)
         else:
-            print(f'Down in {root}')
+            # convert files and create separate PDFs
+            for file in files:
+                if file.endswith('.jpg') or file.endswith('.JPG'):
+                    origFile = os.path.join(root, file)
+                    pdfFile = os.path.join(tmpDir, (file.rsplit('.')[0] + '.pdf'))
+                    print(pdfFile)
+                    imgWarped = processImage(origFile)
+                    savePDF(imgWarped, pdfFile)
+                    if root not in pdfDict:
+                        pdfDict[root] = [pdfFile]
+                    else:
+                        pdfDict[root].append(pdfFile)
 
+    for docName in pdfDict.keys():
+        inFiles = pdfDict[docName]
+        with open(os.path.join(pdfDir, f'{docName}.pdf'), 'wb') as outFile:
+            catPDF(inFiles, outFile)
+
+    rmtree(tmpDir)
 
 
 def test_imgConv():
@@ -185,7 +222,7 @@ def test_imgConv():
     imgWarped = warpPerspective(orig, cropCont)
 
     os.makedirs('test_output', exist_ok=True)
-    saveImage(imgWarped, 'test_output/letter_done.jpg')
+    savePDF(imgWarped, 'test_output/letter_done.pdf')
 
     plotImgs(orig, imgGray, imgBinary, bbox=None, cont=cropCont,
              tr=imgWarped)
