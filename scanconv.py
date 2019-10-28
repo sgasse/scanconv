@@ -129,7 +129,7 @@ def batchTransform(imgDir):
     if os.path.exists(tmpDir):
         rmtree(tmpDir)
     os.makedirs(tmpDir)
-    pdfDir = 'pdfs'
+    pdfDir = './pdfs'
     os.makedirs(pdfDir, exist_ok=True)
     pdfDict = dict()
     for root, _, files in os.walk(imgDir):
@@ -141,10 +141,11 @@ def batchTransform(imgDir):
                     pdfFile = os.path.join(pdfDir, (file.rsplit('.')[0] + '.pdf'))
                 else:
                     pdfFile = os.path.join(tmpDir, (file.rsplit('.')[0] + '.pdf'))
-                    if root not in pdfDict:
-                        pdfDict[root] = [pdfFile]
+                    docName = root.rsplit('/')[-1]
+                    if docName not in pdfDict:
+                        pdfDict[docName] = [pdfFile]
                     else:
-                        pdfDict[root].append(pdfFile)
+                        pdfDict[docName].append(pdfFile)
                 imgWarped = processImage(origFile)
                 savePDF(imgWarped, pdfFile)
 
