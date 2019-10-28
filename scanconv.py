@@ -17,21 +17,6 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 from shutil import rmtree
 
 
-def catPDF(inFiles, outFile):
-    inStream = list()
-    try:
-        for file in inFiles:
-            inStream.append(open(file, 'rb')) 
-        writer = PdfFileWriter()
-        for reader in map(PdfFileReader, inStream):
-            for n in range(reader.getNumPages()):
-                writer.addPage(reader.getPage(n))
-        writer.write(outFile)
-    finally:
-        for f in inStream:
-            f.close()
-
-
 def getImage(file):
     orig = img_as_float(io.imread(file))
     imgGray = gaussian(rgb2gray(orig), sigma=1)
@@ -42,21 +27,6 @@ def thresholdImage(imgGray):
     th = threshold_mean(imgGray)
     imgBinary = imgGray > th
     return imgBinary, th
-
-
-def findRegion(imgBinary):
-    bw = closing(imgBinary, square(3))
-    cleared = clear_border(bw)
-
-    labelImage = label(cleared)
-
-    maxRegion = 0
-    bbox = None
-    for region in regionprops(labelImage):
-        if region.area > maxRegion:
-            bbox = region.bbox
-            maxRegion = region.area
-    return bbox
 
 
 def farthestPoint(arr, quadrant):
@@ -124,11 +94,81 @@ def warpPerspective(img, cropCont):
     return transform.warp(img, tf, output_shape=(height, width))
 
 
+def processImage(fullname):
+    orig, imgGray = getImage(fullname)
+    imgBinary, _ = thresholdImage(imgGray)
+    cropCont = findPolygon(imgBinary)
+    imgWarped = warpPerspective(orig, cropCont)
+    return imgWarped
+
+
 def savePDF(img, filename, quality=80):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         imgP = Image.fromarray(img_as_ubyte(img))
     imgP.save(filename, 'pdf')
+
+
+def catPDF(inFiles, outFile):
+    inStream = list()
+    try:
+        for file in inFiles:
+            inStream.append(open(file, 'rb')) 
+        writer = PdfFileWriter()
+        for reader in map(PdfFileReader, inStream):
+            for n in range(reader.getNumPages()):
+                writer.addPage(reader.getPage(n))
+        writer.write(outFile)
+    finally:
+        for f in inStream:
+            f.close()
+
+
+def batchTransform(imgDir):
+    tmpDir = '/tmp/scanconv'
+    if os.path.exists(tmpDir):
+        rmtree(tmpDir)
+    os.makedirs(tmpDir)
+    pdfDir = 'pdfs'
+    os.makedirs(pdfDir, exist_ok=True)
+    pdfDict = dict()
+    for root, _, files in os.walk(imgDir):
+        # convert files and create separate PDFs
+        for file in files:
+            if file.endswith('.jpg') or file.endswith('.JPG'):
+                origFile = os.path.join(root, file)
+                if root == imgDir:
+                    pdfFile = os.path.join(pdfDir, (file.rsplit('.')[0] + '.pdf'))
+                else:
+                    pdfFile = os.path.join(tmpDir, (file.rsplit('.')[0] + '.pdf'))
+                    if root not in pdfDict:
+                        pdfDict[root] = [pdfFile]
+                    else:
+                        pdfDict[root].append(pdfFile)
+                imgWarped = processImage(origFile)
+                savePDF(imgWarped, pdfFile)
+
+    for docName in pdfDict.keys():
+        inFiles = pdfDict[docName]
+        with open(os.path.join(pdfDir, f'{docName}.pdf'), 'wb') as outFile:
+            catPDF(inFiles, outFile)
+
+    rmtree(tmpDir)
+
+
+def findRegion(imgBinary):
+    bw = closing(imgBinary, square(3))
+    cleared = clear_border(bw)
+
+    labelImage = label(cleared)
+
+    maxRegion = 0
+    bbox = None
+    for region in regionprops(labelImage):
+        if region.area > maxRegion:
+            bbox = region.bbox
+            maxRegion = region.area
+    return bbox
 
 
 def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None, tr=None):
@@ -172,49 +212,9 @@ def plotImgs(orig, imgGray, imgBinary, bbox=None, cont=None, tr=None):
     plt.show()
 
 
-def processImage(fullname):
-    orig, imgGray = getImage(fullname)
-    imgBinary, _ = thresholdImage(imgGray)
-    cropCont = findPolygon(imgBinary)
-    imgWarped = warpPerspective(orig, cropCont)
-    return imgWarped
-
-
-def batchTransform(imgDir):
-    tmpDir = '/tmp/scanconv'
-    if os.path.exists(tmpDir):
-        rmtree(tmpDir)
-    os.makedirs(tmpDir)
-    pdfDir = 'pdfs'
-    os.makedirs(pdfDir, exist_ok=True)
-    pdfDict = dict()
-    for root, _, files in os.walk(imgDir):
-        # convert files and create separate PDFs
-        for file in files:
-            if file.endswith('.jpg') or file.endswith('.JPG'):
-                origFile = os.path.join(root, file)
-                if root == imgDir:
-                    pdfFile = os.path.join(pdfDir, (file.rsplit('.')[0] + '.pdf'))
-                else:
-                    pdfFile = os.path.join(tmpDir, (file.rsplit('.')[0] + '.pdf'))
-                    if root not in pdfDict:
-                        pdfDict[root] = [pdfFile]
-                    else:
-                        pdfDict[root].append(pdfFile)
-                imgWarped = processImage(origFile)
-                savePDF(imgWarped, pdfFile)
-
-    for docName in pdfDict.keys():
-        inFiles = pdfDict[docName]
-        with open(os.path.join(pdfDir, f'{docName}.pdf'), 'wb') as outFile:
-            catPDF(inFiles, outFile)
-
-    rmtree(tmpDir)
-
-
 def test_imgConv():
     orig, imgGray = getImage('img/letter_sheared.jpg')
-    imgBinary, th = thresholdImage(imgGray)
+    imgBinary, _ = thresholdImage(imgGray)
     cropCont = findPolygon(imgBinary)
     imgWarped = warpPerspective(orig, cropCont)
 
