@@ -1,5 +1,6 @@
 import os
 import sys
+import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -124,7 +125,9 @@ def warpPerspective(img, cropCont):
 
 
 def savePDF(img, filename, quality=80):
-    imgP = Image.fromarray(img_as_ubyte(img))
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        imgP = Image.fromarray(img_as_ubyte(img))
     imgP.save(filename, 'pdf')
 
 
