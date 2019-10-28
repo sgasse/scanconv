@@ -1,6 +1,6 @@
 # Scan Converter
 
-In this repository, I develop a small program to solve an everyday task of mine - to crop and transform a sheet of paper from a photo. The subtasks are:
+In this repository, I developed a small program to solve an everyday task of mine - to crop and transform a sheet of paper from a photo. The subtasks are:
  - find the corners of the sheet of paper in the image
  - transform the image with its perspective
  - downscale the image
@@ -12,5 +12,7 @@ For any `*.jpg` or `*.jpg` files, it calculates a transformed image. If the sour
 
 To install the script on a Linux system, make sure that all dependencies are fulfilled and run the following:
 
-`chmod a+rx scanconv.py`
-`sudo ln -s $(pwd)/scanconv.py /usr/local/bin/scanconv`
+```
+chmod a+rx scanconv.py
+sudo ln -s $(pwd)/scanconv.py /usr/local/bin/scanconv
+```
