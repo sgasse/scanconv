@@ -1,4 +1,5 @@
 import os
+import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -177,7 +178,7 @@ def processImage(fullname):
 
 
 def batchTransform(imgDir):
-    tmpDir = f'/tmp/scanconv'
+    tmpDir = '/tmp/scanconv'
     if os.path.exists(tmpDir):
         rmtree(tmpDir)
     os.makedirs(tmpDir)
@@ -228,3 +229,19 @@ def test_imgConv():
 
     return resDict
 
+
+if __name__ == '__main__':
+    print('Scan Converter')
+    if len(sys.argv) == 1:
+        path = os.path.abspath('.')
+    elif len(sys.argv) == 2:
+        path = os.path.abspath(f'./{sys.argv[1]}')
+        if not os.path.exists(path):
+            print(f'Given path {path} does not exist')
+            sys.exit()
+    else:
+        print('Arguments not understood')
+        sys.exit()
+
+    print(f'Parsing {path}')
+    batchTransform(path)
